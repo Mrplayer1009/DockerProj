@@ -7,3 +7,7 @@ CREATE TABLE IF NOT EXISTS messages (
   message TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE USER 'guestuser'@'%' IDENTIFIED BY 'guestpassword';
+GRANT ALL PRIVILEGES ON guestbook.* TO 'guestuser'@'%';
+FLUSH PRIVILEGES;
