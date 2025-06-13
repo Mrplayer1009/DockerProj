@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  db:
+    image: mariadb:11
+    container_name: mariadb-server
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_USER_FILE: /run/secrets/db_user
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - tp-docker
+    secrets:
+      - db_root_password
+      - db_user
+      - db_password
+
+  back:
+    image: loicraoult/docker-tp-back
+    container_name: flask-app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DB_USER_FILE: /run/secrets/db_user
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    depends_on:
+      - db
+    networks:
+      - tp-docker
+    secrets:
+      - db_user
+      - db_password
+
+  front:
+    image: loicraoult/docker-tp-front
+    container_name: vuejs-app
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - back
+    networks:
+      - tp-docker
+
+volumes:
+  mariadb-data:
+
+secrets:
+  db_root_password:
+    file: ./secrets/db_root_password.txt
+  db_user:
+    file: ./secrets/db_user.txt
+  db_password:
+    file: ./secrets/db_password.txt
+
+networks:
+  tp-docker:
+    driver: bridge
