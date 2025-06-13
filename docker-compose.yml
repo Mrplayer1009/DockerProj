@@ -5,27 +5,33 @@ services:
     image: mariadb:11
     container_name: mariadb-server
     restart: always
-    env_file:
-      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: guestbook
+      MYSQL_USER: guestuser
+      MYSQL_PASSWORD: guestpassword
     volumes:
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
       - mariadb-data:/var/lib/mysql
     networks:
       - tp-docker
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$MYSQL_ROOT_PASSWORD || exit 1"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   flask-app:
-    image: loicraoult/docker-tp-back
+    image: loicraoult/docker-tp-back  # ou `build: ./back` si tu veux builder localement
     container_name: flask-app
     restart: always
     ports:
       - "5000:5000"
-    env_file:
-      - .env
+    environment:
+      DB_USER: guestuser
+      DB_PASSWORD: guestpassword
+      DB_HOST: mariadb-server
+      DB_NAME: guestbook
     depends_on:
       mariadb:
         condition: service_healthy
@@ -33,11 +39,11 @@ services:
       - tp-docker
 
   vuejs-app:
-    image: loicraoult/docker-tp-front
+    image: loicraoult/docker-tp-front  # ou `build: ./front`
     container_name: vuejs-app
     restart: always
     ports:
-      - "8080:80"
+      - "8080:80"  # Port changé pour éviter conflit avec hôte
     networks:
       - tp-docker
 
