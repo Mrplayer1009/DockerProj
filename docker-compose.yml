@@ -1,62 +1,54 @@
-version: "3.9"
+version: '3.9'
 
 services:
-  db:
+  mariadb:
     image: mariadb:11
     container_name: mariadb-server
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-      MYSQL_USER_FILE: /run/secrets/db_user
-      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: guestbook
+      MYSQL_USER: guestuser
+      MYSQL_PASSWORD: guestpassword
     volumes:
-      - mariadb-data:/var/lib/mysql
       - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - mariadb-data:/var/lib/mysql
     networks:
       - tp-docker
-    secrets:
-      - db_root_password
-      - db_user
-      - db_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  back:
-    image: loicraoult/docker-tp-back
+  flask-app:
+    image: loicraoult/docker-tp-back  # ou `build: ./back` si tu veux builder localement
     container_name: flask-app
     restart: always
     ports:
       - "5000:5000"
     environment:
-      DB_USER_FILE: /run/secrets/db_user
-      DB_PASSWORD_FILE: /run/secrets/db_password
+      DB_USER: guestuser
+      DB_PASSWORD: guestpassword
+      DB_HOST: mariadb-server
+      DB_NAME: guestbook
     depends_on:
-      - db
+      mariadb:
+        condition: service_healthy
     networks:
       - tp-docker
-    secrets:
-      - db_user
-      - db_password
 
-  front:
-    image: loicraoult/docker-tp-front
+  vuejs-app:
+    image: loicraoult/docker-tp-front  # ou `build: ./front`
     container_name: vuejs-app
     restart: always
     ports:
-      - "8080:80"  # Port modifié ici
-    depends_on:
-      - back
+      - "8080:80"  # Port changé pour éviter conflit avec hôte
     networks:
       - tp-docker
 
 volumes:
   mariadb-data:
-
-secrets:
-  db_root_password:
-    file: ./secrets/db_root_password.txt
-  db_user:
-    file: ./secrets/db_user.txt
-  db_password:
-    file: ./secrets/db_password.txt
 
 networks:
   tp-docker:
