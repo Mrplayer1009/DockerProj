@@ -41,7 +41,7 @@ services:
     container_name: vuejs-app
     restart: always
     ports:
-      - "80:80"
+      - "8080:80"  # Port modifié ici
     depends_on:
       - back
     networks:
